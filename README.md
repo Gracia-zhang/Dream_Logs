@@ -1,2 +1,2 @@
 # Dream_Logs
-My thesis prototype
+Dream Logs is an experience that allows users to record their dream with a “magic device” connected to a phone app that will convert their recording to text and generate matched images based on the text.
