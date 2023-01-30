@@ -1,2 +1,2 @@
 # Dream_Logs
-Created with CodeSandbox
+My thesis prototype
