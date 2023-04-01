@@ -20,7 +20,7 @@ import pauseImg from "./assets/pause.png";
 import stopImg from "./assets/stop.png";
 import loadingImg from "./assets/loading.gif";
 
-const OPENAI_Key ='key';
+const OPENAI_Key ='apikey';
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_Key
 });
@@ -39,6 +39,7 @@ export default function App() {
   let [recognitionText, setRecognitionText] = useState("");
   let [interimText, setInterimText] = useState("");
   let [cardText, setCardText] = useState("This is a blank card.");
+  let [cardImage, setCardImage] = useState(loadingImg);
   let [isRecording, setIsRecording] = useState(false);
   let [isCardMode, setIsCardMode] = useState(false);
   let [isFinished, setIsFinished] = useState(true);
@@ -49,6 +50,11 @@ export default function App() {
   let changeCardText = (text) => {
     setCardText(text);
   };
+  let changeCardImage =(image)=>{
+    var baseStr64="data:image/jpeg;base64,";
+      var src =baseStr64+image;
+      setCardImage(src);
+  }
   let inputValue = recognitionText + interimText
 
   useEffect(() => {
@@ -94,6 +100,7 @@ export default function App() {
           alt="account"
           onClick={() => {
             setIsCardMode(false);
+            setCardImage(loadingImg);
           }}
         />
         <h1 id="title">Dream Logs</h1>
@@ -127,7 +134,7 @@ export default function App() {
           <div className="Content">
             <img
               id="CardImage"
-              src={image1}
+              src={cardImage}
               alt="dreamImage"
             />
             <div className="Comment-text">
@@ -155,6 +162,7 @@ export default function App() {
                   comment={a_comment}
                   changeCardMode={changeCardMode}
                   changeCardText={changeCardText}
+                  changeCardImage={changeCardImage}
                   valueArray={valueArray}
                 />
               );
@@ -199,6 +207,7 @@ export default function App() {
                 setInterimText,
                 setRecognitionText
               );
+              setCardImage(loadingImg);
               setIsFinished(true);
               setIsRecording(false);
               setInterimText("");
@@ -265,7 +274,8 @@ export default function App() {
             src={finishImg}
             alt="finish"
             onClick={() => {
-              console.log(valueArray);
+              
+              //console.log(valueArray);
               setIsFinished(true);
               valueArray.splice(0, 0, {
                 date: new Date(),
@@ -274,7 +284,8 @@ export default function App() {
               });
               setValue(valueArray.slice(0));
               //console.log(JSON.stringify(valueArray));
-              localStorage.setItem("myDream", JSON.stringify(valueArray));
+              //localStorage.setItem("myDream", JSON.stringify(valueArray));
+              
 
               console.log(isFinished);
               stopAudioRecording(
@@ -285,6 +296,14 @@ export default function App() {
               );
               setIsRecording(false);
               setIsCardMode(true);
+              changeToCard(
+                valueArray[0],
+                changeCardMode,
+                changeCardText,
+                changeCardImage,
+                0,
+                valueArray
+              )
               setCardText(recognitionText + interimText);
               setInterimText("");
               setRecognitionText("");
@@ -308,6 +327,7 @@ function Comment(props) {
             props.comment,
             props.changeCardMode,
             props.changeCardText,
+            props.changeCardImage,
             props.commentKey,
             props.valueArray
           )
@@ -322,9 +342,7 @@ function Comment(props) {
 
 
 
-function changeToCard(comment, changeCardMode, changeCardText,key,valueArray) {
-
-
+function changeToCard(comment, changeCardMode, changeCardText,changeCardImage,key,valueArray) {
   const textInput = "Change this dream into one sentence under 30 words:" + comment.text;
   //console.log(textInput);
   const DEFAULT_PARAMS = {
@@ -332,22 +350,16 @@ function changeToCard(comment, changeCardMode, changeCardText,key,valueArray) {
     "messages": [{"role": "user", "content": JSON.stringify(textInput)}],
     "temperature": 0.8
   }
-  console.log(key);
+  console.log(comment);
   //requestForImage();
   if(comment.image != null){
-
+    changeCardText(comment.text);
+    changeCardImage(comment.image);
   }else{
-  //const imageOutput = query(DEFAULT_PARAMS);
-  valueArray.splice(key, 1, {
-    date: comment.date,
-    text: comment.text,
-    image: "changed"
-  })
-  console.log(valueArray[key]);
-}
-localStorage.setItem("myDream", JSON.stringify(valueArray));
-
+  query(DEFAULT_PARAMS,comment,valueArray,key,changeCardImage);
   changeCardText(comment.text);
+  //console.log(imageOutput);
+}
   changeCardMode();
 }
 
@@ -362,7 +374,7 @@ function formatDate(date) {
 
 //API
 
-export async function query(DEFAULT_PARAMS,params = {}) {
+export async function query(DEFAULT_PARAMS,comment,valueArray,key,changeCardImage,params = {}) {
   const params_ = { ...DEFAULT_PARAMS, ...params };
   const requestOptions = {
     method: 'POST',
@@ -379,7 +391,7 @@ export async function query(DEFAULT_PARAMS,params = {}) {
   //console.log(data);
   //console.log(data.choices[0].message.content);
   const imageParams = {
-    "prompt": String(data.choices[0].message.content),
+    "prompt": "hand drawn"+ String(data.choices[0].message.content),
   "n": 1,
   "size": "256x256",
   "response_format":"b64_json"
@@ -397,7 +409,17 @@ export async function query(DEFAULT_PARAMS,params = {}) {
   const imageResponse = await fetch('https://api.openai.com/v1/images/generations',requestImage);
   const responseData = await imageResponse.json();
   //console.log(responseData);
-  console.log(responseData.data[0].b64_json);
+  //console.log(responseData.data[0].b64_json);
+
+  const updatedJSON = await {
+    date: comment.date,
+    text: comment.text,
+    image: responseData.data[0].b64_json
+  }
+  await valueArray.splice(key, 1, updatedJSON)
+  await localStorage.setItem("myDream", JSON.stringify(valueArray));
+  await changeCardImage(responseData.data[0].b64_json);
+  console.log(valueArray);
   return responseData.data[0].b64_json;
 }
 
