@@ -20,7 +20,7 @@ import pauseImg from "./assets/pause.png";
 import stopImg from "./assets/stop.png";
 import loadingImg from "./assets/loading.gif";
 
-const OPENAI_Key ='apikey';
+const OPENAI_Key ='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';
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_Key
 });
@@ -55,6 +55,9 @@ export default function App() {
       var src =baseStr64+image;
       setCardImage(src);
   }
+  let changeValue =(valueA)=>{
+    setValue(valueA);
+  };
   let inputValue = recognitionText + interimText
 
   useEffect(() => {
@@ -101,6 +104,7 @@ export default function App() {
           onClick={() => {
             setIsCardMode(false);
             setCardImage(loadingImg);
+            console.log(valueArray);
           }}
         />
         <h1 id="title">Dream Logs</h1>
@@ -164,6 +168,7 @@ export default function App() {
                   changeCardText={changeCardText}
                   changeCardImage={changeCardImage}
                   valueArray={valueArray}
+                  changeValue={changeValue}
                 />
               );
             })}
@@ -302,7 +307,8 @@ export default function App() {
                 changeCardText,
                 changeCardImage,
                 0,
-                valueArray
+                valueArray,
+                changeValue
               )
               setCardText(recognitionText + interimText);
               setInterimText("");
@@ -329,7 +335,8 @@ function Comment(props) {
             props.changeCardText,
             props.changeCardImage,
             props.commentKey,
-            props.valueArray
+            props.valueArray,
+            props.changeValue
           )
         }
       >
@@ -342,7 +349,7 @@ function Comment(props) {
 
 
 
-function changeToCard(comment, changeCardMode, changeCardText,changeCardImage,key,valueArray) {
+function changeToCard(comment, changeCardMode, changeCardText,changeCardImage,key,valueArray,changeValue) {
   const textInput = "Change this dream into one sentence under 30 words:" + comment.text;
   //console.log(textInput);
   const DEFAULT_PARAMS = {
@@ -356,7 +363,7 @@ function changeToCard(comment, changeCardMode, changeCardText,changeCardImage,ke
     changeCardText(comment.text);
     changeCardImage(comment.image);
   }else{
-  query(DEFAULT_PARAMS,comment,valueArray,key,changeCardImage);
+  query(DEFAULT_PARAMS,comment,valueArray,key,changeCardImage,changeValue);
   changeCardText(comment.text);
   //console.log(imageOutput);
 }
@@ -374,7 +381,7 @@ function formatDate(date) {
 
 //API
 
-export async function query(DEFAULT_PARAMS,comment,valueArray,key,changeCardImage,params = {}) {
+export async function query(DEFAULT_PARAMS,comment,valueArray,key,changeCardImage,changeValue,params = {}) {
   const params_ = { ...DEFAULT_PARAMS, ...params };
   const requestOptions = {
     method: 'POST',
@@ -416,10 +423,10 @@ export async function query(DEFAULT_PARAMS,comment,valueArray,key,changeCardImag
     text: comment.text,
     image: responseData.data[0].b64_json
   }
-  await valueArray.splice(key, 1, updatedJSON)
+  await valueArray.splice(key, 1, updatedJSON);
+  await changeValue(valueArray);
   await localStorage.setItem("myDream", JSON.stringify(valueArray));
   await changeCardImage(responseData.data[0].b64_json);
-  console.log(valueArray);
   return responseData.data[0].b64_json;
 }
 
