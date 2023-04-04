@@ -20,7 +20,7 @@ import pauseImg from "./assets/pause.png";
 import stopImg from "./assets/stop.png";
 import loadingImg from "./assets/loading.gif";
 
-const OPENAI_Key ='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';
+const OPENAI_Key ='key';
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_Key
 });
